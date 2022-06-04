@@ -1,17 +1,18 @@
 //SPDX-License-Identifier: Unlicense.
 pragma solidity ^0.8.10;
 
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 
-contract NFT is ERC721URIStorage, Ownable, ReentrancyGuard {
+contract NFT is ERC721URIStorage, Ownable {
     address private factoryAddress;
     uint256 private royaltiesPctToFactory = 5; // 5% royalties
     string public baseURI;
     uint256 public mintPrice;
+    uint256 public maxMint;
     uint256 public maxSupply;
     bool public isMintEnabled;
     mapping(address => bool) whiteListWallets;
@@ -24,6 +25,7 @@ contract NFT is ERC721URIStorage, Ownable, ReentrancyGuard {
     struct Init {
         address owner;
         uint256 mintPrice;
+        uint256 maxMint;
         string contractName;
         string contractSymbol;
         uint256 maxSupply;
@@ -47,6 +49,8 @@ contract NFT is ERC721URIStorage, Ownable, ReentrancyGuard {
         isMintEnabled = config.isMintEnabled;
         // Sets mint prices
         mintPrice = config.mintPrice;
+        // Sets max mint per wallet
+        maxMint = config.maxMint;
 
         // Let token ID count start from 1.
         _tokenIds.increment();
@@ -68,8 +72,8 @@ contract NFT is ERC721URIStorage, Ownable, ReentrancyGuard {
         require(isMintEnabled, "Minting not enabled!");
         require(maxSupply > _tokenIds.current(), "Sold out");
         require(
-            mintedWallets[msg.sender] < 1,
-            "Exceeded max minted per wallet"
+            mintedWallets[msg.sender] < maxMint,
+            "Exceeded max mint per wallet"
         );
         require(msg.value >= mintPrice, "Insufficient ETH!");
 
@@ -81,6 +85,8 @@ contract NFT is ERC721URIStorage, Ownable, ReentrancyGuard {
 
         uint256 tokenID = _tokenIds.current();
         _safeMint(msg.sender, tokenID);
+        // Increase mint count
+        mintedWallets[msg.sender]++;
         _tokenIds.increment();
     }
 
@@ -100,7 +106,7 @@ contract NFT is ERC721URIStorage, Ownable, ReentrancyGuard {
         return bytes(currentBaseURI).length > 0
             ? string(abi.encodePacked(
                 currentBaseURI,
-                tokenId,
+                Strings.toString(tokenId),
                 ".json"
             )) : "";
     }
@@ -114,16 +120,24 @@ contract NFT is ERC721URIStorage, Ownable, ReentrancyGuard {
         maxSupply = maxSupply_;
     }
 
-    function withdraw() external onlyOwner nonReentrant {
+    function setBaseURI(string memory baseURI_) external onlyOwner {
+        baseURI = baseURI_;
+    }
+
+    function setMintPrice(uint256 newMintPrice_) external onlyOwner {
+        mintPrice = newMintPrice_;
+    }
+
+    function setMaxMint(uint256 newMaxMint_) external onlyOwner {
+        maxMint = newMaxMint_;
+    }
+
+    function withdraw() external onlyOwner {
         (bool success, ) = owner().call{
             value: address(this).balance
         }("");
 
         require(success, "Withdrawal Failed!");
-    }
-
-    function setBaseURI(string memory baseURI_) external onlyOwner {
-        baseURI = baseURI_;
     }
 
     function burn(uint256 quantity_) external onlyOwner {
@@ -137,16 +151,13 @@ contract NFT is ERC721URIStorage, Ownable, ReentrancyGuard {
             maxSupply = _tokenIds.current(); // Burns off all remaining supply
     }
 
-    function addWhitelist(address[] memory whitelisters_) external onlyOwner {
+    function addWhitelist(address[] memory whitelisters_)
+        external
+        onlyOwner
+    {
         for (uint256 i=0; i<whitelisters_.length; i++) {
-            address whitelister = whitelisters_[i];
-            whiteListWallets[whitelister] = true;
+            whiteListWallets[ whitelisters_[i]] = true;
         }
-    }
-
-    // Overloading
-    function addWhitelist(address whitelister_) external onlyOwner {
-        whiteListWallets[whitelister_] = true;
     }
 
     function removeWhitelist(address[] memory whitelisters_) 
@@ -154,13 +165,7 @@ contract NFT is ERC721URIStorage, Ownable, ReentrancyGuard {
         onlyOwner
     {
         for (uint256 i=0; i<whitelisters_.length; i++) {
-            address whitelister = whitelisters_[i];
-            whiteListWallets[whitelister] = false;
+            whiteListWallets[ whitelisters_[i]] = false;
         }
-    }
-
-    // Overloading
-    function removeWhitelist(address whitelister_) external onlyOwner {
-        whiteListWallets[whitelister_] = false;
     }
 }

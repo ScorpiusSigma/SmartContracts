@@ -4,10 +4,9 @@ pragma solidity ^0.8.10;
 import "./NFT.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 
-contract NFTFactory is Ownable, ReentrancyGuard {
+contract NFTFactory is Ownable {
     // Maps sender to contract address they created.
     mapping(address => NFT[]) contracts;
     uint256 public creationPrice = 0.05 ether; // In Ethers 0.005ETH.
@@ -43,9 +42,8 @@ contract NFTFactory is Ownable, ReentrancyGuard {
         creationPrice = price;
     }
 
-    function withdraw() external onlyOwner nonReentrant {
-        (bool success, ) = msg
-                            .sender
+    function withdraw() external onlyOwner {
+        (bool success, ) = owner()
                             .call{
                                 value: address(this).balance
                             }("");
