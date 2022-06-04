@@ -12,7 +12,8 @@ const main = async () => {
   const NFT1 = await NFTFactoryContract.create(
     {
       owner: "0x0000000000000000000000000000000000000000",
-      mintPrice: 1,
+      mintPrice: ethers.utils.parseEther("0.05"),
+      maxMint: 1,
       contractName: "MintedByte",
       contractSymbol: "MB",
       maxSupply: 10,
@@ -27,7 +28,8 @@ const main = async () => {
   const NFT2 = await NFTFactoryContract.connect(signer1).create(
     {
       owner: "0x0000000000000000000000000000000000000000",
-      mintPrice: 1,
+      mintPrice: ethers.utils.parseEther("2"),
+      maxMint: 1,
       contractName: "Justin Leng",
       contractSymbol: "JL",
       maxSupply: 10,
@@ -42,7 +44,8 @@ const main = async () => {
   const NFT3 = await NFTFactoryContract.connect(signer1).create(
     {
       owner: "0x0000000000000000000000000000000000000000",
-      mintPrice: 1,
+      mintPrice: ethers.utils.parseEther("5"),
+      maxMint: 1,
       contractName: "Justin Leng",
       contractSymbol: "JL",
       maxSupply: 10,
