@@ -27,4 +27,8 @@ module.exports = {
   paths: {
     paths: { node_modules: "./node_modules" },
   },
+  optimizer: {
+    enabled: true,
+    runs: 1,
+  },
 };
