@@ -21,7 +21,7 @@ const main = async () => {
       baseURI: "ipfs://",
     },
     {
-      value: ethers.utils.parseEther("0.05"), // Pays Ether
+      value: await NFTFactoryContract.creationPrice(), // Pays Ether
     }
   );
 
@@ -37,7 +37,7 @@ const main = async () => {
       baseURI: "ipfs://",
     },
     {
-      value: ethers.utils.parseEther("1.0"),
+      value: await NFTFactoryContract.creationPrice(),
     }
   );
 
@@ -53,10 +53,13 @@ const main = async () => {
       baseURI: "ipfs://",
     },
     {
-      value: ethers.utils.parseEther("1.0"),
+      value: await NFTFactoryContract.creationPrice(),
     }
   );
 
+  console.log(NFT1);
+  console.log(NFT2);
+  console.log(NFT3);
   console.log(await NFTFactoryContract.getAddress());
   console.log(await NFTFactoryContract.connect(signer1).getAddress());
 };

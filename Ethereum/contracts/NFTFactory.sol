@@ -7,21 +7,24 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 
 
 contract NFTFactory is Ownable {
+    event Create(address sender, string contractName, string contractSymbol);
+
     // Maps sender to contract address they created.
     mapping(address => NFT[]) contracts;
     uint256 public creationPrice = 0.05 ether; // In Ethers 0.005ETH.
     bool public isCreationEnabled = true;
-
+        
     // To count the number of contracts created.
     using Counters for Counters.Counter;
     Counters.Counter private _creationCount;
 
     // Public
-    event Create(address sender, string contractName, string contractSymbol);
+    /** Factory method for NFT Creation
+     */
     function create(NFT.Init memory config) public payable {
         require(isCreationEnabled, "Creation of contract paused!");
         require(msg.value >= creationPrice, "Insufficient ETH!");
-        
+
         // Set owner in config to contract caller
         config.owner = msg.sender;
 

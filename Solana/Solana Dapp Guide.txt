@@ -1,0 +1,244 @@
+// Smart Contract
+	Installation (Windows)
+		General
+			https://github.com/buildspace/buildspace-projects/blob/main/Solana_And_Web3/en/Section_2/Resources/windows_setup.md
+			wsl --install -d Ubuntu
+			wsl -d Ubuntu
+		Rust
+			https://doc.rust-lang.org/book/ch01-01-installation.html
+			curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+		Solana
+			https://docs.solana.com/cli/install-solana-cli-tools#use-solanas-install-tool
+			sh -c "$(curl -sSfL https://release.solana.com/v1.10.19/install)"
+			solana config set --url localhost
+			solana config get
+			cd ~/
+			solana-test-validator (To test if the node is working, but not manually used)
+		Node, NPM, Mocha
+			https://linuxize.com/post/how-to-install-node-js-on-ubuntu-20-04/
+			sudo apt install nodejs npm
+			npm install -g mocha
+		Anchor (Hardhat for solana)
+			https://project-serum.github.io/anchor/getting-started/installation.html#install-anchor
+			sudo apt-get install libssl-dev
+			sudo apt-get install libudev-dev libsystemd-dev
+			sudo apt install libreadline-dev
+			cargo install --git https://github.com/project-serum/anchor anchor-cli --locked
+		Solana Web3 JS (Connects web app to Solana program)
+			npm install @project-serum/anchor @solana/web3.js
+			
+	Create a project and run it
+		anchor init myepicproject --javascript
+		cd myepicproject
+	
+	Create local keypair
+		solana-keygen new
+	
+	To get Solana Address
+		solana address
+	
+	Running the program
+		Note:
+			do not have solana-test-validator running
+		anchor test
+
+	[file]programs/[name]/src/lib.rs:
+		use anchor_lang::prelude::*; // Like import
+
+		declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"); // Program ID for Solana to have info on how to run the program
+
+		#[program] // Macro - Tells the program that the module below to create handlers for people to call
+		pub mod solanaapp { // mod is a module similar to class
+			use super::*;
+
+			pub fn start_stuff_off(ctx: Context<StartStuffOff>) -> Result<()> { // A function
+				let base_account = &mut ctx.accounts.base_account; // Get a reference to the account.
+				base_account.total_gifs = 0; // Initialize total_gifs.
+				Ok(())
+			}
+
+			pub fn add_gif(ctx: Context<AddGif>, gif_link: String) -> Result <()> {
+				// Get a reference to the account and increment total_gifs.
+				let base_account = &mut ctx.accounts.base_account;
+				base_account.total_gifs += 1;
+				Ok(())
+			  }
+
+			
+		}
+
+		#[derive(Accounts)]
+		pub struct StartStuffOff<'info> { // Specify what to hold in StartStuffOff context
+			#[account(init, payer = user, space = 9000)] // Tells Solana how to initialise BaseAccount
+														 //init tells Solana to create a new account owned by the program
+														 // `payer = user` user will be paying for the account creation
+														 // `space = 9000` allocate 9000 bytes of space for the account
+														 
+			pub base_account: Account<'info, BaseAccount>
+			#[account(mut)]
+			pub user: Signer<'info>,
+			pub system_program: Program <'info, System>,
+		}
+		
+		// Specify what data you want in the AddGif Context.
+		#[derive(Accounts)]
+		pub struct AddGif<'info> {
+			#[account(mut)]
+			pub base_account: Account<'info, BaseAccount>,
+		}
+		
+		#[derive(Debug, Clone, AnchorSerialize, AnchorDeserialize)] // Tells Anchor how to serialise/deserialise
+		pub struct ItemStruct {
+			pub gif_link: String,
+			pub user_address: Pubkey,
+		}
+
+		#[account]
+		pub struct BaseAccount { // Tells the program what kind of account to make and what to store
+			pub total_gifs: u64,
+		}
+
+
+	[file]tests/[name].js: // Tells Anchor how to run the program and what functions to call
+		const anchor = require('@project-serum/anchor');
+		const { SystemProgram } = anchor.web3; 
+
+		const main = async() => {
+			console.log("🚀 Starting test...")
+			
+			const provider = anchor.AnchorProvider.env();
+			anchor.setProvider(provider); // Tells Anchor to set provider, it gets data from `solana config get`
+			
+			const program = anchor.workspace.[name]; // Compiles code in lib.rs and deploys it to a local validator
+			
+			const baseAccount = anchor.web3.Keypair.generate(); // Creates an account keypair for the program to use
+						
+			let tx = await program.rpc.startStuffOff({ // Calls the function
+				accounts: {
+					baseAccount: baseAccount.publickey,
+					user: provider.wallet.publicKey,
+					systemProgram: SystemProgram.programId,
+				},
+				signers: [baseAccount],
+			});
+
+			console.log("📝 Your transaction signature", tx);
+			
+			let account = await program.account.baseAccount.fetch(baseAccount.publickey);
+			console.log('👀 GIF Count', account.totalGifs.toString())
+		}
+
+		const runMain = async () => {
+		  try {
+			await main();
+			process.exit(0);
+		  } catch (error) {
+			console.error(error);
+			process.exit(1);
+		  }
+		};
+
+		runMain();
+
+
+	[file]Anchor.toml
+		[features]
+		seeds = false
+		
+		[programs.localnet] // For localnet
+		[programs.devnet] // For devnet
+		solanaapp = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+
+		[registry]
+		url = "https://anchor.projectserum.com"
+
+		[provider]
+		cluster = "localnet" // For localnet
+		cluster = "devnet" // For devnet
+		wallet = "/home/justin/.config/solana/id.json"
+
+		[scripts]
+		test = "node tests/[name].js"
+
+	Deployment
+		`solana set --url devnet` // set to deploy to devnet
+		`solana airdrop 2` //Airdrop 2 Sol - max is 2 per call
+		Change to Anchor.toml to respect net => localnet | devnet | mainnet
+		anchor build
+		`solana address -k target/deploy/[name]-keypair.json` to get program id
+		replace declare_id value in lib.rs to the program id
+		replace appname value under [program.devnet] to program id
+		anchor deploy
+		
+	idl file
+		copy target/idl/name.json and paste to app/src // similar to abi
+		
+
+//Frontend
+	[NOTES]
+		Things needed to call contract from web app:
+			1) idl file
+			
+	[Check for solana wallet]
+		const { solana } = window;
+	
+	[Check for a wallet provider]
+		solana.isPhantom // if your wallet is phantom
+		
+	[Check for wallets with authorised access]
+		const response = await solana.connect({onlyIfTrusted: true})
+		
+	[request for wallet connections]
+		const response = await solana.connect();
+		
+	[Get wallet public key]
+		response.publickey.toString();
+	
+	[Create a file] constants.js
+		export const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_GOES_HERE';
+		
+	[Getting ABI from smart_contract]
+		// Deply smart contract first
+		artifacts/contracts/[name].sol/[name].json
+	
+	[Adding ABI to Frontend]
+		// Add ABI, [name].json, into utils/contracts
+	
+	[Checking of Network]
+		window.ethereum.networkVersion // gives the network that the wallet is at.
+	
+	[Talk to Ethereum nodes] // To send and receive data
+		const provider = new ethers.providers.Web3Provider(window.ethereum);
+		const signer = provider.getSigner();
+	
+	[Create connection to contract]
+		const contract = new ethers.Contract(
+		  CONTRACT_ADDRESS,
+		  [name].abi,
+		  signer
+		);
+		
+		// Invocation of function
+		const txn = await contract.checkIfUserHasNFT();
+
+	[Listent to contract for event]
+		contract.on([Event Name], [Function to execute when event is caught])
+
+	
+//// Errors and Solutions
+TypeError: accounts.map(...).flat is not a function | TextEncoder is undefined
+	node version too old. Need to update
+	```
+		sudo npm cache clean -f
+		sudo npm install -g n
+		sudo n stable
+		sudo n latest
+		
+TypeError: Cannot read properties of undefined (reading 'rpc')
+	Capitalise the first letter in `anchor.workspace.[Name]`
+	To figure it out, `console.log(anchor.workspace);`  and see how the values are accessed with the object printed
+	
+error: Invalid value for '--program-id <PROGRAM_ID>': unrecognized signer source
+	Remove spaces in folder path
+		or
+	solana program deploy <path_to_my_built_program.so>
