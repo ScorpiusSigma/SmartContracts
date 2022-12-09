@@ -55,13 +55,17 @@
 
 	[file]hardhat.config.js:
 		module.exports = {
-		  solidity: "0.8.10", //change solidity: "0.8.4", to solidity: "0.8.0" 
-		  networks: {
-			rinkeby: {
-			  url: 'YOUR ALCHEMY_API_URL',
-			  accounts: ['YOUR_PRIVATE_RINKEBY_ACCOUNT_KEY_FROM_METAMASK'],
+			solidity: "0.8.10", //change solidity: "0.8.4", to solidity: "0.8.0" 
+			networks: {
+				rinkeby: {
+				url: 'YOUR ALCHEMY_API_URL',
+				accounts: ['YOUR_PRIVATE_RINKEBY_ACCOUNT_KEY_FROM_METAMASK'],
+				},
 			},
-		  },
+
+			etherscan: {
+				apiKey: 'YOUR_ETHERSCAN_API_KEY',
+			}
 		};
 
 
